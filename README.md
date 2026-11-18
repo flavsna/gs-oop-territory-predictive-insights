@@ -75,7 +75,7 @@ Os limites são definidos em três níveis: atenção, alerta e crítico.
 | Nível do rio (m) |     2,5 |    3,5 |     4,5 |
 | Umidade (%)      |      70 |     85 |      95 |
 
-Os limites podem ser alterados por meio do código de acesso, na classe `DadosTerritorio`.
+Os limites podem ser alterados pelo menu (opção 3 → 4), informando o código de acesso. A classe `DadosTerritorio` só aceita a alteração se o código estiver correto, se a ordem for atenção < alerta < crítico e se os valores estiverem dentro da faixa física do sensor (chuva 0–150 mm/h, rio 0–10 m, umidade 0–100%). Caso contrário, a alteração é rejeitada e os valores anteriores são mantidos.
 
 ### Funcionamento das previsões e dos alertas
 
@@ -99,23 +99,38 @@ A utilização de dados simulados permitiu desenvolver e testar o funcionamento 
 
 ## 6. Reflexão crítica
 
-**1. Sobre a quantidade mínima de leituras:**
+### 6.1 Sobre a quantidade mínima de leituras
 
-- Por que é importante ter uma quantidade mínima de dados antes de gerar uma previsão?
-- O que poderia acontecer se o sistema emitisse alertas com poucas leituras?
-- Como a ausência de dados suficientes pode afetar a confiabilidade de uma previsão?
+**Por que é importante ter uma quantidade mínima de dados antes de gerar uma previsão?**
+Com poucas leituras, uma única variação fora do comum pesa demais no resultado. Na média móvel, se houver só duas leituras e uma delas for um pico momentâneo, a "média" passa a representar esse pico, e não o comportamento real. Por isso definimos 5 leituras para a Média Móvel e 6 para a Comparação de Períodos (dois períodos completos de 3).
 
-**2. Sobre as limitações do projeto:**
+**O que poderia acontecer se o sistema emitisse alertas com poucas leituras?**
+O sistema geraria falsos alarmes ou, ao contrário, deixaria passar situações reais. A Comparação de Períodos é a mais sensível: ela soma a diferença entre os períodos à média atual, então, com períodos de uma leitura só, um salto de 10 mm/h seria projetado como mais 10 mm/h na próxima leitura. Alarmes falsos frequentes fazem os moradores pararem de confiar nos avisos, e isso é perigoso quando o risco for real.
 
-- Quais são as limitações de utilizar `Math.random()` para simular condições ambientais?
-- Quais problemas podem surgir ao utilizar apenas uma estação de coleta para representar toda a comunidade?
-- Como a instalação de sensores físicos em diferentes pontos poderia melhorar o monitoramento?
+**Como a ausência de dados suficientes pode afetar a confiabilidade de uma previsão?**
+Sem dados suficientes não dá para separar tendência de ruído. Por isso, nessa situação o sistema prefere "se calar": informa quantas leituras existem, qual é o mínimo e não gera alerta. Achamos melhor ser transparente sobre a falta de dados do que mostrar um número que parece preciso mas não é.
 
-**3. Sobre a utilização das previsões:**
+### 6.2 Sobre as limitações do projeto
 
-- Por que uma previsão não deve ser considerada uma garantia de que um alagamento acontecerá?
-- Quais outras informações deveriam ser consideradas antes de tomar uma decisão?
-- Quais riscos existem quando as pessoas dependem exclusivamente dos alertas emitidos pelo sistema?
+**Quais são as limitações de utilizar `Math.random()` para simular condições ambientais?**
+Os valores seguem uma regra que nós mesmas escolhemos (um passeio aleatório com leve tendência de alta), e não a física real. Os três sensores são independentes, enquanto na realidade a chuva forte faz o rio subir algum tempo depois e aumenta a umidade. A simulação também não tem sazonalidade (época de chuvas), horário do dia nem eventos extremos repentinos. Ela serve para testar o funcionamento do código, mas não para validar se as previsões acertam.
+
+**Quais problemas podem surgir ao utilizar apenas uma estação de coleta para representar toda a comunidade?**
+Uma estação mede um ponto só. Pode estar chovendo forte na cabeceira do córrego e fraco onde a estação está, e o alerta chegaria tarde. Além disso, se essa estação falhar, a comunidade fica sem nenhum monitoramento, porque não há redundância. Também não dá para saber quais ruas ou áreas baixas estão em maior risco.
+
+**Como a instalação de sensores físicos em diferentes pontos poderia melhorar o monitoramento?**
+Sensores ao longo do córrego (montante, meio e jusante) permitiriam ver a água subindo antes de chegar às áreas mais baixas, ganhando tempo para avisar os moradores. Com vários pontos, uma leitura estranha em um sensor poderia ser comparada com os vizinhos para identificar defeito, e a falha de uma estação não deixaria a comunidade descoberta. Nosso código já permite isso, porque `EstacaoDeColeta` é uma classe que pode ter várias instâncias.
+
+### 6.3 Sobre a utilização das previsões
+
+**Por que uma previsão não deve ser considerada uma garantia de que um alagamento acontecerá?**
+As estratégias apenas projetam o comportamento recente das leituras. A média móvel diz qual é o "nível recente esperado" e a comparação supõe que a tendência vai continuar igual, mas a chuva pode parar ou piorar de repente. Além disso, o alagamento depende de fatores que o sistema não mede, como bueiros entupidos, lixo no córrego e impermeabilização do solo.
+
+**Quais outras informações deveriam ser consideradas antes de tomar uma decisão?**
+Previsão meteorológica oficial (radar, alertas do CGE e da Defesa Civil), histórico de alagamentos da região, relatos de moradores e agentes em campo, situação da drenagem e o horário (um alerta de madrugada exige outra forma de aviso). Por isso o próprio alerta do sistema pede para confirmar em campo antes de agir.
+
+**Quais riscos existem quando as pessoas dependem exclusivamente dos alertas emitidos pelo sistema?**
+Se o sistema falhar (sensor quebrado, falta de energia, limiar mal configurado), as pessoas podem achar que está tudo normal só porque nenhum alerta apareceu. O silêncio do sistema não significa segurança. Também existe o risco contrário: muitos alertas falsos levam as pessoas a ignorar os avisos. O sistema deve ser uma ferramenta de apoio somada ao julgamento humano e aos canais oficiais, nunca a única fonte de decisão.
 
 ## 7. Uso de inteligência artificial
 
